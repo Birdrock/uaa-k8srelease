@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: uaa
+  namespace: uaa
 data:
   uaa.yml: |
     scim:
@@ -30,8 +31,49 @@ data:
         uaa.admin: Act as an administrator throughout the UAA
         uaa.none: Forbid acting as a user
         uaa.offline_token: Allow offline access
+      users:
+      - admin|admin|admin|||scim.write,scim.read,openid,cloud_controller.admin,clients.read,clients.write,doppler.firehose,routing.router_groups.read|uaa
 
     oauth:
+      clients:
+        cf:
+          id: cf
+          override: true
+          authorized-grant-types: password,refresh_token
+          scope: cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write,doppler.firehose,uaa.user,routing.router_groups.read,routing.router_groups.write
+          authorities: uaa.none
+          access-token-validity: 600
+          refresh-token-validity: 2592000
+          secret: ""
+        app:
+          id: app
+          override: true
+          secret: app-secret
+          authorized-grant-types: authorization_code,client_credentials,refresh_token
+          authorities: test_resource.test_action
+          scope: test_resource.test_action,test_resource.other_action
+          redirect-uri: http://login.example.com
+          autoapprove:
+          - test_resource.test_action
+          - test_resource.other_action
+          app-launch-url: http://myapppage.com
+          show-on-homepage: true
+          app-icon: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAD1BMVEWZttQvMDEoKisqKywAAAApvvoVAAAAGElEQVQYlWNgYUQBLAxMDCiAeXgLoHsfAD03AHOyfqy1AAAAAElFTkSuQmCC
+        admin:
+          authorized-grant-types: client_credentials
+          authorities: clients.read,clients.write,clients.secret,uaa.admin,scim.read,scim.write,password.write,openid
+          autoapprove:
+          - openid
+          id: admin
+          secret: adminsecret
+        implicit_ok:
+          id: implicit_ok
+          authorities: uaa.none
+          authorized-grant-types: implicit
+          redirect-uri: "http://some.redirect.com/callback"
+          override: true
+          show-on-homepage: true
+          scope: openid
       user:
         authorities:
           - openid
@@ -50,11 +92,11 @@ data:
           - uaa.offline_token
 
     issuer:
-      uri: http://localhost:8080/uaa
+      uri: http://localhost:8443/uaa
 
     login:
-      url: http://localhost:8080/uaa
-      entityBaseURL: http://localhost:8080/uaa
+      url: http://localhost:8443/uaa
+      entityBaseURL: http://localhost:8443/uaa
       entityID: cloudfoundry-saml-login
       saml:
         nameID: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified'
@@ -104,13 +146,13 @@ data:
         -----END CERTIFICATE-----
 
     uaa:
-      url: http://localhost:8080/uaa
+      url: http://localhost:8443/uaa
       token:
-        url: http://localhost:8080/uaa/oauth/token
+        url: http://localhost:8443/uaa/oauth/token
       approvals:
-        url: http://localhost:8080/uaa/approvals
+        url: http://localhost:8443/uaa/approvals
       login:
-        url: http://localhost:8080/uaa/authenticate
+        url: http://localhost:8443/uaa/authenticate
       limitedFunctionality:
         enabled: false
         whitelist:
